@@ -1,0 +1,3 @@
+{:deps    {}
+ :aliases {}
+ :paths   ["src/main"]}
