@@ -1,0 +1,3 @@
+{:deps    {fulcro-nav-router {:local/root "../../"}}
+ :aliases {}
+ :paths   ["src/main"]}
