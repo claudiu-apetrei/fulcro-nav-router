@@ -1,3 +1,6 @@
-{:deps    {}
+{:deps    {metosin/reitit-core {:mvn/version "0.2.5"}
+           kibu/pushy          {:mvn/version "0.3.8"}
+           fulcro/incubator    {:git/url "https://github.com/fulcrologic/fulcro-incubator.git" :sha "6e82b623f54a4a36ae27be1035f04c9cd929d784"}
+           }
  :aliases {}
  :paths   ["src/main"]}

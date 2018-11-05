@@ -3,11 +3,11 @@
             [fulcro.client.dom :as dom]
             #?(:cljs [goog.Uri :as goog-uri])
             [fulcro-nav-router.protocols :as p]
+            [reitit.core :as reitit]
             [fulcro.client.mutations :refer [defmutation]]
             [fulcro.util :as futil]
             [fulcro.client.primitives :as prim :refer [defsc]]
-            [cljs.loader :as cljs-loader]
-            [bidi.bidi :as bidi]))
+            [cljs.loader :as cljs-loader]))
 
 
 (defn component-has-method? [component method]
@@ -17,28 +17,27 @@
 (defmulti get-dynamic-router-target (fn [k] k))
 (defmethod get-dynamic-router-target :default [k] nil)
 
-(defsc PRouter [this {:keys [::route-key ::route-data]}]
-  {:query         (fn [] [::route-key ::route-data])
-   :ident         (fn [] [::nav-router :singleton])
-   :initial-state (fn [params] {::route-data [:PAGE/settings 1]
-                                ::route-key  :home})}
-  (let [active-route-comp (get-dynamic-router-target route-key)]
-    (when active-route-comp
-      ((prim/factory active-route-comp) route-data))))
+(defsc RouterComponent [this {:keys [::route-key ::route-data]}]
+       {:query         (fn [] [::route-key ::route-data])
+        :ident         (fn [] [::nav-router :singleton])
+        :initial-state (fn [params] {::route-data []
+                                     ::route-key  nil})}
+       (let [active-route-comp (get-dynamic-router-target route-key)]
+         (when active-route-comp
+           ((prim/factory active-route-comp) route-data))))
 
 
-(declare routes->bidi-routes
-         routes-handlers->modules)
+(declare module-routes->routes
+         routes-handler->module)
 
 
-(defrecord Router [config state reconciler history routes]
+(defrecord Router [config state reconciler history routing-map]
   p/IRouter
-  (get-config [_] config)
   (change-route [this {:keys [::reconciler ::component ::route-info ::ident] :as payload}]
     (let [app-state (prim/app-state reconciler)]
       (swap! app-state assoc-in [::nav-router :singleton ::route-data] ident)
       (swap! app-state assoc-in [::nav-router :singleton ::route-key] (:handler route-info))
-      (swap! app-state prim/set-query* PRouter {:query [::route-key {::route-data (prim/get-query component)}]})
+      (swap! app-state prim/set-query* RouterComponent {:query [::route-key {::route-data (prim/get-query component)}]})
       payload)
    )
   (call-on-before-enter [this {:keys [::component] :as payload}]
@@ -50,12 +49,14 @@
    )
   (load-module [this payload]
     (let [handler      (->> payload ::route-info :handler)
-          route-module (get (:handler->module routes) handler)
+          route-module (get (:handler->module routing-map) handler)
           callback     #(p/dispatch-next this :load-module payload)]
       (cljs-loader/load route-module callback))
    )
   (build-initial-app-state [this {:keys [::reconciler ::route-info] :as payload}]
     (let [component       (-> route-info :handler get-dynamic-router-target)
+
+          _ (prn "rm " route-info component )
           app-state       (prim/app-state reconciler)
           initial-state   (prim/get-initial-state component (:route-params route-info))
           ident           (prim/get-ident component initial-state)
@@ -78,24 +79,22 @@
 
    )
   (nav-to! [this uri push-uri?]
-    (let [bidi-routes      (:bidi-routes routes)
-          route-info       (bidi/match-route bidi-routes uri)
+    (let [
+          route-info       (reitit/match-by-path (:router routing-map) uri)
           uri-routing-type (:uri-routing-type config)
           route-uri        (if (= :fragment uri-routing-type) (str "#" uri) uri)
-          handler          (:handler route-info)
-          route-module     (get (:handler->module routes) handler)
+          handler          (-> route-info :data :name)
+          route-module     (get (:handler->module routing-map) handler)
           payload          {::reconciler   reconciler
                             ::uuid         (futil/unique-key)
-                            ::route-uri    uri
                             ::route-module route-module
-                            ::route-info   route-info}]
+                            ::route-info   {:handler      handler
+                                            :route-params (:path-params route-info)
+                                            :uri          uri}}]
       (p/dispatch-next this :nav-to payload)
       (when (and push-uri?
                  (not= uri-routing-type :none))
         (pushy/set-token! history route-uri))
-
-      #?(:cljs (js/console.log "nav-to" route-info uri))
-
       )))
 
 
@@ -113,14 +112,14 @@
                                                path)]
                              (if (= uri-routing-type :fragment)
                                (p/nav-to! router (if-not (empty? fragment) fragment uri) false)
-                               (p/nav-to! router uri false))
-
-                             (js/console.log "in browser nav callback" uri)))
+                               (p/nav-to! router uri false))))
         history          (if browser?
                            (pushy/pushy identity js/window.location.pathname)
                            (atom {}))
-        routes-map       {:bidi-routes     (routes->bidi-routes routes)
-                          :handler->module (routes-handlers->modules routes)}
+        routes-flat      (module-routes->routes routes)
+        routes-map       {:routes          routes-flat
+                          :router          (reitit/router routes-flat)
+                          :handler->module (routes-handler->module routes)}
         router-inst      (Router.
                           config
                           (atom {::browser? browser?})
@@ -128,9 +127,10 @@
                           history
                           routes-map)]
     (def router router-inst)                                ; hack ? :(
+
     #?(:cljs
        (when (and browser? (not= uri-routing-type :none))
-         (.addEventListener js/window "popstate" (partial browser-nav router-inst))))
+             (.addEventListener js/window "popstate" (partial browser-nav router-inst))))
     router-inst))
 
 
@@ -142,11 +142,11 @@
 (defn hijack-link! [evt]
   #?(:cljs
      (let [uri (-> evt .-currentTarget (.getAttribute "href"))]
-       (.preventDefault evt)
-       (p/nav-to! router uri true))))
+          (.preventDefault evt)
+          (p/nav-to! router uri true))))
 
 
-(def ui-p-router (prim/factory PRouter {:qualifier ::route-key}))
+(def ui-router (prim/factory RouterComponent {:qualifier ::route-key}))
 
 (defn init-module-routes [module-key routes]
   (doseq [[k c] routes]
@@ -154,11 +154,12 @@
   (when-not (= module-key :main)
     (cljs-loader/set-loaded! module-key)))
 
-(defn routes->bidi-routes [routes]
-  ["/" (->> routes vals (apply merge))])
+(defn module-routes->routes [routes]
+  (->> routes vals (apply concat) vec))
 
-(defn routes-handlers->modules [routes]
+(defn routes-handler->module [routes]
   (reduce-kv
-   #(merge %1 (zipmap (vals %3) (repeat %2)))
+   (fn [acc k v]
+     (merge acc (zipmap (map second v) (repeat k))))
    {}
    routes))
