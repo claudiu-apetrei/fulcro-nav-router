@@ -1,3 +1,8 @@
-{:deps    {fulcro-nav-router {:local/root "../../"}}
+{:deps    {fulcro-nav-router          {:local/root "../../"}
+           fulcrologic/fulcro-inspect {:mvn/version "2.2.1"}
+           ;kibu/pushy                 {:mvn/version "0.3.8"}
+           ;bidi                       {:mvn/version "2.1.3"},
+
+           fulcrologic/fulcro         {:mvn/version "2.6.0-RC9"}}
  :aliases {}
  :paths   ["src/main"]}

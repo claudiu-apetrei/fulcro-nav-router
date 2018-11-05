@@ -4,7 +4,9 @@
                      :output-dir "resources/public/js/main"
                      :asset-path "/js/main"
 
-                     :modules    {:app {:entries [simple-spa.client]}}
+                     :modules    {:main {:entries [simple-spa.client]}
+                                  :account {:entries [simple-spa.routing.account-module]
+                                            :depends-on #{:main }}}
 
                      :devtools   {:after-load simple-spa.client/start
                                               :preloads [fulcro.inspect.preload simple-spa.development-preload]
