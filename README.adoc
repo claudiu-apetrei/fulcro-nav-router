@@ -1,10 +1,7 @@
 WARNING: The project is currently pre-alpha/proof of concept. I you want to try it out just add it to you're deps.edn (fulcro 2.6.13 or newer required) or just run the application in the examples folder
 
 
-# Fulcro-nav-router
-Fulcro nav router is meant as a top level abstraction over fulcro, handling the nitty-gritty details of things like: html5 routing, code splitting, fulcro dynamic queries and providing a structure for common things related to routing: initial load, page metadata (title, description), loading co-located css and acl checks.
-
-A benefit of having this structure is that it makes features like server side rendering & rote pre-load data trivial to implement.
+*Fulcro nav router* is meant as a top level abstraction over fulcro, handling the nitty-gritty details of things like: html5 routing, code splitting, fulcro dynamic queries and providing a structure for common things related to routing: initial load, page metadata (title, description), loading co-located css and acl checks.
 
 
 # Getting started
@@ -116,11 +113,11 @@ Changing the routes can be done by:
 
 
 # Roadmap
-- Checks for route->component setup
-- Handle client-only initial page load based on current url
+- Add error messages & setup checks
+- Add pre-load route data option
+- Add initial load page placeholder
 - Add page-metadata method
 - Add acl-check method
-- Add pre-load route data option
 - Add middleware support for all router lifecycle-methods
 - Add route load co-located css as middleware
 - JVM server side rendering

@@ -7,7 +7,6 @@
   ""
   [{:keys [location value]}]
   (action [{:keys [state] :as env}]
-          (prn "here in transact" location value)
     (swap! state assoc-in location value)))
 
 
