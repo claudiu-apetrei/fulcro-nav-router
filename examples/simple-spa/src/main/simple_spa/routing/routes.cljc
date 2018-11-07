@@ -3,7 +3,6 @@
 (def routes
   {:main    [["/" :home]
              ["/friends" :friends]
-             ["/person/:id" :person-page]
+             ["/person/:id" :person]
              ["/about" :about]]
    :account [["/account/settings" :account-settings]]})
-

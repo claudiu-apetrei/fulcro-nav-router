@@ -26,7 +26,7 @@
 
 ;; ==================== SERVER ====================
 
-(set-refresh-dirs "src/dev" "src/main" "src/test")
+(set-refresh-dirs "src/dev" "src/main/api" "src/test")
 
 (defn started? [sys]
   (-> sys :config :value))

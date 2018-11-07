@@ -6,6 +6,33 @@
 
 ;; Server queries can go here
 
+
+(def people-db (atom {1  {:db/id 1 :person/name "Bert" :person/age 55 :person/about "aaaaa"}
+                      2  {:db/id 2 :person/name "Sally" :person/age 22 :person/about "bbbbbbbbbbbbbbbb"}
+                      3  {:db/id 3 :person/name "Allie" :person/age 76 :person/about "ccccccccccccccc"}
+                      4  {:db/id 4 :person/name "Zoe" :person/age 32 :person/about "ddddddddddddddddddd"}}))
+
+(defn get-people [kind keys]
+  (->> @people-db
+    vals
+    vec))
+
+(defquery-root :my-friends
+  "Queries for friends and returns them to the client"
+  (value [{:keys [query]} params]
+    (->> @people-db
+         vals
+         (map #(select-keys % query))
+         vec)))
+
+(defquery-entity :person/by-id
+  "Returns the meaning of life."
+  (value [{:keys [query]} id params]
+    (let [person (get @people-db id)]
+      (timbre/info "getting" query "for person/by-id" id)
+      (Thread/sleep 500)
+      (select-keys person query))))
+
 (defquery-entity :meaning/by-id
   "Returns the meaning of life."
   (value [{:keys [query]} id params]

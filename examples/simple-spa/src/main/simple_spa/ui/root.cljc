@@ -1,11 +1,11 @@
 (ns simple-spa.ui.root
   (:require
-    [fulcro.client.mutations :as m]
-    [fulcro.client.data-fetch :as df]
-    #?(:cljs [fulcro.client.dom :as dom] :clj [fulcro.client.dom-server :as dom])
-    [simple-spa.api.mutations :as api]
-    [fulcro-nav-router.core :as nav-router]
-    [fulcro.client.primitives :as prim :refer [defsc]]))
+   [fulcro.client.mutations :as m]
+   [fulcro.client.data-fetch :as df]
+   #?(:cljs [fulcro.client.dom :as dom] :clj [fulcro.client.dom-server :as dom])
+   [simple-spa.api.mutations :as api]
+   [fulcro-nav-router.core :as nav-router]
+   [fulcro.client.primitives :as prim :refer [defsc]]))
 
 ;; The main UI of your application
 
@@ -23,12 +23,9 @@
           (dom/div :.navbar-start
             (dom/a :.navbar-item {:href "/friends" :onClick nav-router/hijack-link!} "Friends")
             (dom/a :.navbar-item {:href "/about" :onClick nav-router/hijack-link!} "About")
+            (dom/a :.navbar-item {:href "/account/settings" :onClick nav-router/hijack-link!} "Account - module")
             (dom/div :.navbar-item
-              (dom/button :.button {:onClick #(nav-router/nav-to! "/about")} "About button"))
-            (dom/a :.navbar-item {:href "/account/settings" :onClick nav-router/hijack-link!} "Account - module")))
-        ))
-
+              (dom/button :.button {:onClick #(nav-router/nav-to! "/about")} "About button"))))))
     (dom/main :.bd-main
       (dom/div :.container.bd-main-container {:style {:minHeight "400px"}}
-        (nav-router/ui-router router)))
-   ))
+        (nav-router/ui-router router)))))
