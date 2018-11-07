@@ -1,3 +1,0 @@
-# Fulcro-nav-router
-
-

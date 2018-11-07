@@ -1,0 +1,131 @@
+WARNING: The project is currently pre-alpha/proof of concept. I you want to try it out just add it to you're deps.edn (fulcro 2.6.13 or newer required) or just run the application in the examples folder
+
+
+# Fulcro-nav-router
+Fulcro nav router is meant as a top level abstraction over fulcro, handling the nitty-gritty details of things like: html5 routing, code splitting, fulcro dynamic queries and providing a structure for common things related to routing: initial load, page metadata (title, description), loading co-located css and acl checks.
+
+A benefit of having this structure is that it makes features like server side rendering & rote pre-load data trivial to implement.
+
+
+# Getting started
+
+=== Defining the routes
+
+```
+(def routes
+  {:main    [["/" :home]
+             ["/friends" :friends]
+             ["/person/:id" :person-page]
+             ["/about" :about]]
+   :account [["/account/settings" :account-settings]]})
+
+```
+A map where the keys represent the module names. `:main` is reserved for the routes in the app the other keys are for code-splitting and have to match the key that you defined for the module.
+The route params format is from https://github.com/metosin/reitit.
+
+=== Linking route handlers to the components
+
+```
+(nav-router/init-module-routes :main {:home    HomePage
+                                      :friends FriendsPage
+                                      :about   AboutPage})
+```
+`:main` is a reserved key for the app routes. In the case of modules that loaded by the module loader this will also trigger the `(cljs-loader/set-loaded! module-key)`
+
+=== Initializing the router
+
+In the `client.js`. Make sure that the file that has `(nav-router/init-module-routes :main ...` is imported.
+
+```
+(fc/new-fulcro-client
+  :started-callback (fn [{:keys [reconciler]}]
+                      (nav-router/init-router {:reconciler reconciler
+                                               :config     {:uri-routing-type :fragment}
+                                               :routes     routes})
+                      (nav-router/nav-to! "/"))
+        ...)
+
+```
+Params
+
+`:routes` the routes you defined
+
+`:uri-routing-type` Can be one of:
+
+- `:none` (will not update browser uri)
+- `:normal` (normal html5 routing with paths like `/about/project`)
+- `:fragment` (will add the `\#` before so you're routes will be like  `#/about/project`)
+
+
+=== Adding the router to the Root component
+
+You have to add the nav-router/RouterComponent in the Root just like any other `defsc`.
+
+```
+(ns my-ns
+ (:require
+    [fulcro-nav-router.core :as nav-router]
+    ...))
+
+(defsc Root [this {:keys [router]}]
+  {:initial-state (fn [p]
+                    {:router (prim/get-initial-state nav-router/RouterComponent {})})
+   :query         [{:router (prim/get-query nav-router/RouterComponent)}]}
+  (dom/div
+   (nav-router/ui-router router)))
+
+```
+
+=== Defining you're route components
+
+```
+(ns ns-ns
+ (:require
+    [fulcro-nav-router.core :as nav-router :refer [defsc-route]]
+    ...))
+
+(defsc-route MyPage [this {:keys [router]}]
+  {:initial-state  (fn [route-params]
+                     ...)
+   :query           [...]
+   :ident           [:my-page :param/id]
+   :on-before-enter (fn [{:keys [::nav/reconciler] :as payload}]
+                       (prim/transact! reconciler `[(init-defaults)])
+
+   )}
+  (dom/div
+   (nav-router/ui-router router)))
+
+```
+
+- `:initial-state` Will be called by the router passing the route-params as a parameter
+
+Route components can be just normal defsc, but if you want the router lifecycle methods you should use the `defsc-route` macro
+
+- `:on-before-enter` Is where you can add `prim/transact!`, `df/load`
+
+=== Navigation, changing routes
+
+The Router only listens browser back/foreword events (see http://html5doctor.com/history-api/#historical-events) the browser url changes are a side-effect of the router updates.
+
+Changing the routes can be done by:
+
+- `(nav-router/nav-to! "/your-path")` This will also update the browser url, if `:uri-routing-type` is not `:none`
+- `(nav-router/nav-to* "/your-path")` Will only change the screen
+- `(dom/a {:href "/friends" :onClick nav-router/hijack-link!} "text")` This utility method will add event.preventDefault and call nav-to! on the element.href
+
+
+# Roadmap
+- Checks for route->component setup
+- Handle client-only initial page load based on current url
+- Add page-metadata method
+- Add acl-check method
+- Add pre-load route data option
+- Add middleware support for all router lifecycle-methods
+- Add route load co-located css as middleware
+- JVM server side rendering
+- nodejs/nashorn/graaljs server side rendering
+- Add proof of concept middleware implementing ideas in https://bit.ly/2SMShGj
+
+
+
