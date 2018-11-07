@@ -6,10 +6,8 @@
   (load-module [this payload] "")
   (build-initial-app-state [this payload] "")
   (change-route [this payload] "")
-  (call-on-before-enter [this payload] "")
+  (call-on-before-enter [this payload] ""))
 
-  )
+(defprotocol RoutingOnBeforeEnter
+  (on-before-enter [this payload]))
 
-(defprotocol Routing
-  (on-before-enter [this payload])
-  )

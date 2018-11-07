@@ -1,6 +1,6 @@
 (ns fulcro-nav-router.core
+  (:require-macros fulcro-nav-router.core)
   (:require [pushy.core :as pushy]
-            [fulcro.client.dom :as dom]
             #?(:cljs [goog.Uri :as goog-uri])
             [fulcro-nav-router.protocols :as p]
             [reitit.core :as reitit]
@@ -10,9 +10,10 @@
             [cljs.loader :as cljs-loader]))
 
 
+
 (defn component-has-method? [component method]
   (case method
-    :on-before-enter (implements? p/Routing component)))
+    :on-before-enter (implements? p/RoutingOnBeforeEnter component)))
 
 (defmulti get-dynamic-router-target (fn [k] k))
 (defmethod get-dynamic-router-target :default [k] nil)
@@ -27,8 +28,10 @@
            ((prim/factory active-route-comp) route-data))))
 
 
-(declare module-routes->routes
-         routes-handler->module)
+(declare
+ router
+ module-routes->routes
+ routes-handler->module)
 
 
 (defrecord Router [config state reconciler history routing-map]
@@ -38,32 +41,31 @@
       (swap! app-state assoc-in [::nav-router :singleton ::route-data] ident)
       (swap! app-state assoc-in [::nav-router :singleton ::route-key] (:handler route-info))
       (swap! app-state prim/set-query* RouterComponent {:query [::route-key {::route-data (prim/get-query component)}]})
-      payload)
-   )
+      payload))
   (call-on-before-enter [this {:keys [::component] :as payload}]
     (let [on-before-enter? (component-has-method? component :on-before-enter)]
-      (prn :call-on-before-enter ":" on-before-enter?)
       (when on-before-enter?
         (p/on-before-enter component payload))
-      (p/dispatch-next this :call-on-before-enter payload))
-   )
+      (p/dispatch-next this :call-on-before-enter payload)))
   (load-module [this payload]
     (let [handler      (->> payload ::route-info :handler)
           route-module (get (:handler->module routing-map) handler)
           callback     #(p/dispatch-next this :load-module payload)]
-      (cljs-loader/load route-module callback))
-   )
+      (cljs-loader/load route-module callback)))
   (build-initial-app-state [this {:keys [::reconciler ::route-info] :as payload}]
     (let [component       (-> route-info :handler get-dynamic-router-target)
-
-          _ (prn "rm " route-info component )
-          app-state       (prim/app-state reconciler)
+          component-query (prim/get-query component)
           initial-state   (prim/get-initial-state component (:route-params route-info))
           ident           (prim/get-ident component initial-state)
+          app-state       (prim/app-state reconciler)
+          add-route-state (fn [state-map]
+                            (let [normalized-state (-> (prim/tree->db [{:tmp/new-route component-query}] {:tmp/new-route initial-state} true)
+                                                       (dissoc :tmp/new-route))]
+                              (futil/deep-merge state-map normalized-state)))
           updated-payload (assoc payload ::ident ident
                                          ::component component
                                          ::component-initial-state initial-state)]
-      (swap! app-state assoc-in ident initial-state)
+      (swap! app-state add-route-state)
       (p/dispatch-next this :build-initial-app-state updated-payload)))
   (dispatch-next [this previous payload]
     (case previous
@@ -74,13 +76,9 @@
                 )
       :load-module (p/build-initial-app-state this payload)
       :build-initial-app-state (p/call-on-before-enter this payload)
-      :call-on-before-enter (p/change-route this payload)
-      )
-
-   )
+      :call-on-before-enter (p/change-route this payload)))
   (nav-to! [this uri push-uri?]
-    (let [
-          route-info       (reitit/match-by-path (:router routing-map) uri)
+    (let [route-info       (reitit/match-by-path (:router routing-map) uri)
           uri-routing-type (:uri-routing-type config)
           route-uri        (if (= :fragment uri-routing-type) (str "#" uri) uri)
           handler          (-> route-info :data :name)
@@ -94,11 +92,8 @@
       (p/dispatch-next this :nav-to payload)
       (when (and push-uri?
                  (not= uri-routing-type :none))
-        (pushy/set-token! history route-uri))
-      )))
+        (pushy/set-token! history route-uri)))))
 
-
-(declare router)
 
 (defn init-router [{:keys [reconciler routes config]}]
   (let [browser?         (exists? js/window)
@@ -126,24 +121,25 @@
                           reconciler
                           history
                           routes-map)]
-    (def router router-inst)                                ; hack ? :(
+    (def router router-inst) ; ????
 
     #?(:cljs
        (when (and browser? (not= uri-routing-type :none))
-             (.addEventListener js/window "popstate" (partial browser-nav router-inst))))
+         (.addEventListener js/window "popstate" (partial browser-nav router-inst))))
     router-inst))
-
 
 
 (defn nav-to! [uri]
   (p/nav-to! router uri true))
 
+(defn nav-to* [uri]
+  (p/nav-to! router uri false))
 
 (defn hijack-link! [evt]
   #?(:cljs
      (let [uri (-> evt .-currentTarget (.getAttribute "href"))]
-          (.preventDefault evt)
-          (p/nav-to! router uri true))))
+       (.preventDefault evt)
+       (p/nav-to! router uri true))))
 
 
 (def ui-router (prim/factory RouterComponent {:qualifier ::route-key}))
