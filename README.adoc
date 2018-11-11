@@ -1,3 +1,11 @@
+:source-highlighter: coderay
+:source-language: clojure
+:toc:
+:toc-placement: preamble
+:sectlinks:
+:sectanchors:
+:sectnums:
+
 WARNING: The project is currently pre-alpha/proof of concept. I you want to try it out just add it to you're deps.edn (fulcro 2.6.13 or newer required) or just run the application in the examples folder
 
 
@@ -73,7 +81,7 @@ You have to add the nav-router/RouterComponent in the Root just like any other `
 
 ```
 
-=== Defining you're route components
+=== Defining your route components
 
 ```
 (ns ns-ns
