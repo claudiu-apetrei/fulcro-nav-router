@@ -1,0 +1,8 @@
+{:deps    {fulcro-nav-router          {:local/root "../../"}
+           fulcrologic/fulcro-inspect {:mvn/version "2.2.1"}
+           ;org.clojure/clojure        {:nvm/version "1.9.0-alpha16"}
+           binaryage/devtools         {:mvn/version "0.9.8"}
+           fulcrologic/fulcro         {:local/root "/home/claudiu/clojure/fulcro"}}
+ ;fulcrologic/fulcro         {:mvn/version "2.6.15"}}
+ :aliases {}
+ :paths   ["src/main"]}

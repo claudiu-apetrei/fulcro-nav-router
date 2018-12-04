@@ -20,6 +20,7 @@
 (defquery-root :my-friends
   "Queries for friends and returns them to the client"
   (value [{:keys [query]} params]
+   (Thread/sleep 500)
     (->> @people-db
          vals
          (map #(select-keys % query))
