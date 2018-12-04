@@ -23,12 +23,11 @@
 (defn ^:export init []
   (reset! app (fc/new-fulcro-client
                :started-callback (fn [{:keys [reconciler]}]
-                                     (nav-router/init-router {:reconciler reconciler
-                                                              :config     {:uri-routing-type :fragment}
-                                                              :routes     routes
-                                                               })
-                                     (nav-router/nav-to! "/"))
+                                   (nav-router/init-router {:reconciler reconciler
+                                                            :config     {:uri-routing-type :fragment}
+                                                            :routes     routes})
+                                   (nav-router/nav-to-current-route!))
                :reconciler-options {:shared      {::i18n/message-formatter message-format}
-                                    :render-mode :keyframe  ; Good for beginners. Remove to optimize UI refresh
+                                    ;:render-mode :keyframe  ; Good for beginners. Remove to optimize UI refresh
                                     :shared-fn   ::i18n/current-locale}))
   (start))
