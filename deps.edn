@@ -1,6 +1,6 @@
 {:deps    {metosin/reitit-core          {:mvn/version "0.2.5"}
            kibu/pushy                   {:mvn/version "0.3.8"}
            fulcrologic/fulcro-incubator {:mvn/version "0.0.12"}
-           }
+           lambdaisland/uri             {:mvn/version "1.1.0"}}
  :aliases {}
  :paths   ["src/main"]}
