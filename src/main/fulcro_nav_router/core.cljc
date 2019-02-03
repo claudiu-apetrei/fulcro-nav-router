@@ -2,6 +2,7 @@
   (:require-macros fulcro-nav-router.core)
   (:require [pushy.core :as pushy]
             #?(:cljs [goog.Uri :as goog-uri])
+            [clojure.core :refer [re-find]]
             [fulcro-nav-router.protocols :as p]
             [fulcro.client.impl.protocols :as fulcro-protocols]
             [reitit.core :as reitit]
@@ -20,19 +21,19 @@
 (defmethod get-dynamic-router-target :default [k] nil)
 
 (defsc RouterComponent [this {:keys [::route-key ::route-data]}]
-       {:query         (fn [] [::route-key ::route-data])
-        :ident         (fn [] [::nav-router :singleton])
-        :initial-state (fn [params] {::route-data []
-                                     ::route-key  nil})}
-       (let [active-route-comp (get-dynamic-router-target route-key)]
-         (when active-route-comp
-           ((prim/factory active-route-comp) route-data))))
+  {:query         (fn [] [::route-key ::route-data])
+   :ident         (fn [] [::nav-router :singleton])
+   :initial-state (fn [params] {::route-data []
+                                ::route-key  nil})}
+  (let [active-route-comp (get-dynamic-router-target route-key)]
+    (when active-route-comp
+      ((prim/factory active-route-comp) route-data))))
 
 
 (declare
- router
- module-routes->routes
- routes-handler->module)
+  router
+  module-routes->routes
+  routes-handler->module)
 
 
 (defrecord Router [config state reconciler history routing-map]
@@ -43,7 +44,7 @@
       (swap! app-state assoc-in [::nav-router :singleton ::route-data] ident)
       (swap! app-state assoc-in [::nav-router :singleton ::route-key] (:handler route-info))
       (prim/set-query! reconciler RouterComponent {:params component-initial-state
-                                                   :query [::route-key {::route-data (prim/get-query component)}]} )
+                                                   :query  [::route-key {::route-data (prim/get-query component)}]})
 
       payload))
   (call-on-before-enter [this {:keys [::component ::reconciler ::ident] :as payload}]
@@ -67,7 +68,7 @@
           app-state       (prim/app-state reconciler)
           add-route-state (fn [state-map]
                             (let [normalized-state (-> (prim/tree->db [{:tmp/new-route component-query}] {:tmp/new-route initial-state} true)
-                                                       (dissoc :tmp/new-route))]
+                                                     (dissoc :tmp/new-route))]
                               (futil/deep-merge state-map normalized-state)))
           updated-payload (assoc payload ::ident ident
                                          ::component component
@@ -98,7 +99,7 @@
                                             :uri          uri}}]
       (p/dispatch-next this :nav-to payload)
       (when (and push-uri?
-                 (not= uri-routing-type :none))
+              (not= uri-routing-type :none))
         (pushy/set-token! history route-uri)))))
 
 (def browser?
@@ -125,11 +126,11 @@
                           :router          (reitit/router routes-flat)
                           :handler->module (routes-handler->module routes)}
         router-inst      (Router.
-                          config
-                          (atom {::browser? browser?})
-                          reconciler
-                          history
-                          routes-map)]
+                           config
+                           (atom {::browser? browser?})
+                           reconciler
+                           history
+                           routes-map)]
     (def router router-inst)                                ; ????
 
     #?(:cljs
@@ -164,10 +165,10 @@
 
 (defn routes-handler->module [routes]
   (reduce-kv
-   (fn [acc k v]
-     (merge acc (zipmap (map second v) (repeat k))))
-   {}
-   routes))
+    (fn [acc k v]
+      (merge acc (zipmap (map second v) (repeat k))))
+    {}
+    routes))
 
 (defn nav-to-current-route! []
   #?(:cljs
@@ -180,3 +181,4 @@
                            (:relative-path uri-details))]
 
        (p/nav-to! router nav-uri false))))
+

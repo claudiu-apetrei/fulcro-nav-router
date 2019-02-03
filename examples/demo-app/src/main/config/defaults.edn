@@ -1,4 +1,4 @@
-{:http-kit      {:port 3000}
+{:http-kit      {:port 3051}
 
  ;; Legal Origins for API request.
  :legal-origins #{"localhost" "dev.lvh.me"}

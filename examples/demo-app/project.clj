@@ -3,7 +3,7 @@
   :license {:name "MIT" :url "https://opensource.org/licenses/MIT"}
   :min-lein-version "2.7.0"
 
-  :dependencies [[org.clojure/clojure "1.9.0"]
+  :dependencies [[org.clojure/clojure "1.10.0-RC3"]
                  [thheller/shadow-cljs "2.7.2"]
                  [fulcrologic/fulcro "2.6.15"]
                  [com.wsscode/pathom "2.2.0-RC3"]
@@ -32,7 +32,7 @@
 
   :uberjar-name "demo-app.jar"
 
-  :source-paths ["src/main"]
+  :source-paths ["src/main/jvm_server" "src/main/app" "src"]
   :test-paths ["src/test"]
 
   :test-refresh {:report       fulcro-spec.reporters.terminal/fulcro-report
@@ -45,7 +45,7 @@
                           :prep-tasks     ["clean" ["clean"]
                                            "compile" ["with-profile" "cljs" "run" "-m" "shadow.cljs.devtools.cli" "release" "main"]]}
              :production {}
-             :cljs       {:source-paths ["src/main" "src/test" "src/workspaces"]
+             :cljs       {:source-paths ["src/app/main" "src/test" "src/workspaces"]
                           :dependencies [[binaryage/devtools "0.9.10"]
                                          [fulcrologic/fulcro-inspect "2.2.4"]]}
              :dev        {:source-paths ["src/dev" "src/main" "src/workspaces"]
