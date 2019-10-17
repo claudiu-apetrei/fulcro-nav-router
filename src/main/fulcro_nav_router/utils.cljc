@@ -15,8 +15,8 @@
 
 (defn set-value! [reconciler location value]
   (prim/transact! reconciler `[(set-my-value* {:location ~location :value ~value})]))
-;
-;
+
+
 (defn process-query-params [query]
   (reduce
    (fn [acc param]

@@ -2,8 +2,8 @@
   (:require [demo-app.containers.home-page :refer [HomePage]]
             [demo-app.containers.about-page :refer [AboutPage]]
             [demo-app.containers.libraries-page :refer [LibrariesPage]]
-            [demo-app.containers.library-page :refer [LibraryPage]])
-  )
+            [demo-app.containers.library-page :refer [LibraryPage]]
+            [fulcro-nav-router.core :as nav-router]))
 
 (def routes
   {:main    [["/" :home]
@@ -40,9 +40,9 @@
                       re-pattern)
             params* (->> path
                       (re-find pattern))
-            params  (if (vector? params*)
-                      (->> params* rest (map #(-> % (subs 1) keyword)) vec)
-                      [])]
+            params (if (vector? params*)
+                     (->> params* rest (map #(-> % (subs 1) keyword)) vec)
+                     [])]
         {:path      path
          :pattern   pattern
          :handler   handler
@@ -57,8 +57,8 @@
     (def x "/library/55")
     (identity re-find)
     (let [route-str "/library/:id"
-          pat-str   (clojure.string/replace route-str #"(:[^\/]*)" "([^/]*)")
-          re        (re-pattern pat-str)]
+          pat-str (clojure.string/replace route-str #"(:[^\/]*)" "([^/]*)")
+          re (re-pattern pat-str)]
       (clojure.core/re-find re "/library/aa_123-a+:")
       (clojure.core/re-find re route-str)
       )

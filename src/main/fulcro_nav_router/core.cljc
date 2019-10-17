@@ -73,7 +73,8 @@
           updated-payload (assoc payload ::ident ident
                                          ::component component
                                          ::component-initial-state initial-state)]
-      (swap! app-state add-route-state)
+      (when-not (get-in @app-state ident)
+        (swap! app-state add-route-state))
       (p/dispatch-next this :build-initial-app-state updated-payload)))
   (dispatch-next [this previous payload]
     (case previous
